@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editorial Dashboard - Tech Tomorrow</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="editorialPage.css">
+</head>
+<body>
+    <div class="container py-4">
+        <div class="dashboard-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="mb-2">Editorial Dashboard</h1>
+                    <p class="mb-0">Review and manage submitted articles</p>
+                </div>
+                <button onclick="logout()" class="btn btn-light">Logout</button>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="editorialTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">
+                    Pending Review <span id="pendingCount" class="badge bg-warning text-dark ms-2">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="published-tab" data-bs-toggle="tab" data-bs-target="#published" type="button" role="tab">
+                    Published Articles <span id="publishedCount" class="badge bg-success ms-2">0</span>
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="editorialTabContent">
+            <!-- Pending Articles -->
+            <div class="tab-pane fade show active" id="pending" role="tabpanel">
+                <div id="pendingArticles">
+                    <div class="empty-state">
+                        <p>Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Published Articles -->
+            <div class="tab-pane fade" id="published" role="tabpanel">
+                <div id="publishedArticles">
+                    <div class="empty-state">
+                        <p>Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Article Preview Modal -->
+    <div class="modal fade" id="previewModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Article Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="previewContent">
+                    <!-- Preview content will be inserted here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentPreviewArticle = null;
+
+        // Load articles on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPendingArticles();
+            loadPublishedArticles();
+        });
+
+        // Logout function
+        function logout() {
+            window.location.href = 'index.html';
+        }
+
+        // Load pending articles
+        async function loadPendingArticles() {
+            try {
+                const response = await fetch('/api/submissions');
+                const articles = await response.json();
+                
+                const pendingContainer = document.getElementById('pendingArticles');
+                const pendingCount = document.getElementById('pendingCount');
+                
+                if (articles.length === 0) {
+                    pendingContainer.innerHTML = `
+                        <div class="empty-state">
+                            <p>📭</p>
+                            <p>No articles pending review</p>
+                        </div>
+                    `;
+                    pendingCount.textContent = '0';
+                    return;
+                }
+                
+                pendingCount.textContent = articles.length;
+                
+                // Sort by ID (newest first)
+                articles.sort((a, b) => b.id - a.id);
+                
+                pendingContainer.innerHTML = articles.map(article => `
+                    <div class="article-card">
+                        <span class="status-badge status-pending">Pending Review</span>
+                        <span class="article-category">${article.category}</span>
+                        <h2 class="article-title">${article.title}</h2>
+                        <div class="article-meta">By ${article.author} • ${article.date} • ${article.readTime} min read</div>
+                        <p class="article-excerpt">${article.excerpt}</p>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary" onclick="previewArticle(${article.id})">
+                                Preview Full Article
+                            </button>
+                            <button class="btn btn-success" onclick="approveArticle(${article.id})">
+                                ✓ Approve & Publish
+                            </button>
+                            <button class="btn btn-danger" onclick="rejectArticle(${article.id})">
+                                ✗ Reject
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading pending articles:', error);
+                showNotification('Failed to load pending articles.', 'error');
+            }
+        }
+
+        // Load published articles
+        async function loadPublishedArticles() {
+            try {
+                const response = await fetch('/api/articles');
+                const articles = await response.json();
+                
+                const publishedContainer = document.getElementById('publishedArticles');
+                const publishedCount = document.getElementById('publishedCount');
+                
+                if (articles.length === 0) {
+                    publishedContainer.innerHTML = `
+                        <div class="empty-state">
+                            <p>📄</p>
+                            <p>No published articles yet</p>
+                        </div>
+                    `;
+                    publishedCount.textContent = '0';
+                    return;
+                }
+                
+                publishedCount.textContent = articles.length;
+                
+                // Sort by ID (newest first)
+                articles.sort((a, b) => b.id - a.id);
+                
+                publishedContainer.innerHTML = articles.map(article => `
+                    <div class="article-card">
+                        <span class="article-category">${article.category}</span>
+                        <h2 class="article-title">${article.title}</h2>
+                        <div class="article-meta">By ${article.author} • ${article.date} • ${article.readTime} min read</div>
+                        <p class="article-excerpt">${article.excerpt}</p>
+                        <div class="d-flex gap-2">
+                            <a href="article-${article.id}.html" class="btn btn-outline-primary" target="_blank">
+                                View on Site
+                            </a>
+                            <button class="btn btn-danger" onclick="deleteArticle(${article.id})">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading published articles:', error);
+                showNotification('Failed to load published articles.', 'error');
+            }
+        }
+
+        // Preview article in modal
+        async function previewArticle(articleId) {
+            try {
+                const response = await fetch('/api/submissions');
+                const articles = await response.json();
+                const article = articles.find(a => a.id === articleId);
+                
+                if (!article) {
+                    showNotification('Article not found', 'error');
+                    return;
+                }
+                
+                currentPreviewArticle = article;
+                
+                const previewContent = document.getElementById('previewContent');
+                previewContent.innerHTML = `
+                    <div class="article-card">
+                        <span class="article-category">${article.category}</span>
+                        <h2 class="article-title">${article.title}</h2>
+                        <div class="article-meta">By ${article.author} • ${article.date} • ${article.readTime} min read</div>
+                        <p class="article-excerpt"><strong>Excerpt:</strong><br>${article.excerpt}</p>
+                        <hr>
+                        <div class="article-full-content">
+                            <strong>Full Content:</strong><br>
+                            ${article.content}
+                        </div>
+                    </div>
+                `;
+                
+                const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+                modal.show();
+                
+            } catch (error) {
+                console.error('Error previewing article:', error);
+                showNotification('Failed to preview article', 'error');
+            }
+        }
+
+        // Approve and publish article
+        async function approveArticle(articleId) {
+            if (!confirm('Approve and publish this article to the website?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/submissions/${articleId}/approve`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Article published successfully!', 'success');
+                    await loadPendingArticles();
+                    await loadPublishedArticles();
+                } else {
+                    showNotification('Error: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error approving article:', error);
+                showNotification('Failed to approve article. Please try again.', 'error');
+            }
+        }
+
+        // Reject article
+        async function rejectArticle(articleId) {
+            if (!confirm('Reject this article? This will permanently delete it.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/submissions/${articleId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Article rejected and deleted.', 'success');
+                    await loadPendingArticles();
+                } else {
+                    showNotification('Error: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error rejecting article:', error);
+                showNotification('Failed to reject article. Please try again.', 'error');
+            }
+        }
+
+        // Delete published article
+        async function deleteArticle(articleId) {
+            if (!confirm('Are you sure you want to delete this published article?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/articles/${articleId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Article deleted successfully!', 'success');
+                    await loadPublishedArticles();
+                } else {
+                    showNotification('Error: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting article:', error);
+                showNotification('Failed to delete article. Please try again.', 'error');
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const existingNotification = document.querySelector('.custom-notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = `custom-notification alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                min-width: 300px;
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

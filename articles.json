@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1760832495358,
+    "title": "testing",
+    "category": "Cybersecurity",
+    "author": "Author",
+    "date": "October 18, 2025",
+    "readTime": "20",
+    "excerpt": "brief summary",
+    "content": "this is a test to make sure my system works\n1\n2\n34\n4\n5\n"
+  },
+  {
+    "id": 1760909977085,
+    "title": "for submission ",
+    "category": "Cloud Computing",
+    "author": "Daniel Little",
+    "date": "October 19, 2025",
+    "readTime": "20",
+    "excerpt": "this is to prove AJAX is operational",
+    "content": "show off ajax is working and my posting system is also working."
+  },
+  {
+    "id": 1763330854853,
+    "title": "test",
+    "category": "Blockchain",
+    "author": "Author",
+    "date": "November 16, 2025",
+    "readTime": "10",
+    "excerpt": "this is to test the submission process",
+    "content": "i am testing the submission process I hope this works"
+  },
+  {
+    "id": 1764872858511,
+    "title": "Passwordless Authentication: The Future of Digital Security",
+    "category": "Cybersecurity",
+    "author": "Michael Rodriguez",
+    "date": "December 4, 2025",
+    "readTime": "4",
+    "excerpt": "Major tech giants are finally moving away from traditional passwords. With biometric authentication, passkeys, and hardware security keys",
+    "content": "<p>Major tech giants are finally moving away from traditional passwords. With biometric authentication, passkeys, and hardware security keys becoming mainstream, the era of complex passwords may be coming to an end. This shift promises not only enhanced security but also improved user experience. Early adopters report a 70% reduction in account breaches.</p>"
+  }
+]

@@ -1,0 +1,181 @@
+/* Basic Styles */
+body {
+    font-family: Arial, sans-serif;
+    color: #000000;
+}
+
+/* Navigation */
+.navbar {
+    background-color: #19561f;
+    padding: 1rem 0;
+}
+
+.navbar-brand {
+    color: white !important;
+    font-weight: bold;
+}
+
+.nav-link {
+    color: white !important;
+    margin: 0 10px;
+}
+
+.nav-link:hover {
+    color: #e74c3c !important;
+}
+
+/* Hero Section */
+.hero {
+    background-color: #19561f;
+    color: white;
+    padding: 100px 0;
+}
+
+.hero h1 {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+
+/* Articles */
+.featured-article h2 {
+    color: #19561f;
+}
+
+.article-card {
+    transition: transform 0.3s;
+}
+
+.article-card:hover {
+    transform: translateY(-5px);
+}
+
+.article-card img {
+    border-radius: 5px;
+}
+
+/* Sidebar */
+.sidebar-section {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+}
+
+.sidebar-section h4 {
+    color: #19561f;
+    margin-bottom: 15px;
+}
+
+.sidebar-section a {
+    color: #19561f;
+    text-decoration: none;
+}
+
+.sidebar-section a:hover {
+    color: #000000;
+}
+
+/* Newsletter */
+.newsletter {
+    background-color: #000000;
+    color: white;
+}
+
+/* Footer */
+footer {
+    background-color: #19561f;
+    color: white;
+}
+
+/* TechTomorrow Page Navbar */
+.techtomorrow-navbar {
+    background-color: #19561f;
+    padding: 1rem 0;
+    margin-bottom: 50px;
+}
+
+.techtomorrow-navbar .navbar-brand {
+    color: white !important;
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.techtomorrow-navbar .btn {
+    background-color: #000000;
+    color: white;
+    border: none;
+    padding: 8px 25px;
+}
+
+.techtomorrow-navbar #Article {
+    color: white;
+}
+
+.techtomorrow-navbar #Signup {
+    color: white;
+}
+
+.techtomorrow-navbar .btn:hover {
+    background-color: #000000;
+}
+/* Articles Section Styles */
+.articles-section {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    margin-bottom: 3rem;
+}
+
+.article-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.article-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.article-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #247a2d 0%, #000000 100%);
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+}
+
+.article-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.8rem;
+}
+
+.article-meta {
+    color: #718096;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.article-excerpt {
+    color: #4a5568;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+}
+
+.read-more {
+    color: #667eea;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.read-more:hover {
+    color: #764ba2;
+}

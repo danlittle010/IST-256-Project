@@ -1,0 +1,26 @@
+.article-category {
+    display: inline-block;
+    background: linear-gradient(135deg, #247a2d 0%, #000000 100%);
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+}
+h1 {
+    text-align: center;
+    color: white;
+}
+.tagline {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: white;
+}
+header {
+    background: linear-gradient(135deg, #247a2d 0%, #000000 100%);
+    padding: 30px;
+}
+#Home {
+    color: white;
+}

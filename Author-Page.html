@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Author Dashboard - Tech Tomorrow</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="homestyle.css">
+    <link rel="stylesheet" href="author-page.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar techtomorrow-navbar">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">Tech Tomorrow</a>
+            <div>
+                <span class="text-white me-3">Welcome, <span id="authorName">Author</span></span>
+                <button class="btn btn-outline-light btn-sm" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="text-center mb-4">
+            <h2>Author Dashboard</h2>
+            <p class="text-muted">Create and manage your articles</p>
+        </div>
+
+        <!-- Create Article Form -->
+        <div class="articles-section mb-5">
+            <h3 class="mb-4">Create New Article</h3>
+            <form id="articleForm">
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label for="articleTitle" class="form-label">Article Title *</label>
+                        <input type="text" class="form-control" id="articleTitle" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="articleCategory" class="form-label">Category *</label>
+                        <select class="form-control" id="articleCategory" required>
+                            <option value="">Select Category</option>
+                            <option value="AI & Machine Learning">AI & Machine Learning</option>
+                            <option value="Cybersecurity">Cybersecurity</option>
+                            <option value="Blockchain">Blockchain</option>
+                            <option value="IoT">IoT</option>
+                            <option value="Cloud Computing">Cloud Computing</option>
+                            <option value="5G & Connectivity">5G & Connectivity</option>
+                            <option value="Green Tech">Green Tech</option>
+                            <option value="Robotics">Robotics</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="articleAuthor" class="form-label">Author Name *</label>
+                        <input type="text" class="form-control" id="articleAuthor" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="articleReadTime" class="form-label">Read Time (minutes) *</label>
+                        <input type="number" class="form-control" id="articleReadTime" min="1" max="60" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="articleExcerpt" class="form-label">Article Excerpt *</label>
+                    <textarea class="form-control" id="articleExcerpt" rows="3" 
+                        placeholder="Brief summary of the article (2-3 sentences)" required></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="articleContent" class="form-label">Full Article Content *</label>
+                    <textarea class="form-control" id="articleContent" rows="8" 
+                        placeholder="Write your full article here..." required></textarea>
+                </div>
+
+                <div class="text-end">
+                    <button type="reset" class="btn btn-secondary me-2">Clear</button>
+                    <button type="submit" class="btn btn-success">Publish Article</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Published Articles -->
+        <div class="articles-section">
+            <h3 class="mb-4">Your Published Articles</h3>
+            <div id="publishedArticles">
+                <div class="text-center text-muted py-5">
+                    <p>No articles published yet. Create your first article above!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-5 py-3 text-center">
+        <p class="mb-0">&copy; 2025 Tech Tomorrow. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="author-page.js"></script>
+</body>
+
+</html>
