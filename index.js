@@ -1,12 +1,19 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
+const connectDB = require('./config/database');
 const app = express();
 const port = 80;
 
+// Connect to MongoDB
+connectDB();
+
+// Import models
+const User = require('./models/User');
+const Login = require('./models/Login');
+
 // Import article routes
 const articlesRoutes = require('./articlesRoutes');
-const submissionsRoutes = require('./submissionsRoutes'); // NEW
+const submissionsRoutes = require('./submissionsRoutes');
 
 // Middleware - MUST come before routes
 app.use(express.json());
@@ -14,26 +21,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files (CSS, client-side JS, HTML files, etc.)
 app.use(express.static(__dirname));
-
-// Define data paths for different JSON files
-const userDataPath = path.join(__dirname, 'userData.json');
-const loginDataPath = path.join(__dirname, 'Login.JSON');
-const productsDataPath = path.join(__dirname, 'products.json');
-const ordersDataPath = path.join(__dirname, 'orders.json');
-const articlesDataPath = path.join(__dirname, 'articles.json');
-const submissionsDataPath = path.join(__dirname, 'submissions.json'); // NEW
-
-// Initialize articles.json if it doesn't exist
-if (!fs.existsSync(articlesDataPath)) {
-    fs.writeFileSync(articlesDataPath, '[]', 'utf8');
-    console.log('Created articles.json file');
-}
-
-// Initialize submissions.json if it doesn't exist - NEW
-if (!fs.existsSync(submissionsDataPath)) {
-    fs.writeFileSync(submissionsDataPath, '[]', 'utf8');
-    console.log('Created submissions.json file');
-}
 
 // Routes
 app.get('/', (req, res) => {
@@ -46,82 +33,51 @@ app.get('/signup', (req, res) => {
 
 // Use article routes with /api/articles prefix
 app.use('/api/articles', articlesRoutes);
-app.use('/api/submissions', submissionsRoutes); // NEW
+app.use('/api/submissions', submissionsRoutes);
 
-// ===== USER ROUTES (using userData.json) =====
+// ===== USER ROUTES (using MongoDB) =====
 
 // POST route to handle signup
-app.post('/signup', (req, res) => {
-    const userData = req.body;
-    console.log("Data received:", userData);
+app.post('/signup', async (req, res) => {
+    try {
+        const userData = req.body;
+        console.log("Data received:", userData);
 
-    // Read existing data
-    fs.readFile(userDataPath, 'utf8', (err, data) => {
-        let users = [];
-
-        // If file exists and has content, parse it
-        if (!err && data) {
-            try {
-                users = JSON.parse(data);
-            } catch (parseErr) {
-                console.error("Error parsing JSON:", parseErr);
-                users = [];
-            }
+        // Check if user already exists
+        const existingUser = await User.findOne({ email: userData.email });
+        if (existingUser) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "User with this email already exists" 
+            });
         }
 
-        // Add new user to array
-        users.push(userData);
+        // Create new user
+        const newUser = new User(userData);
+        await newUser.save();
 
-        // Write updated data back to file
-        fs.writeFile(userDataPath, JSON.stringify(users, null, 2), 'utf8', (writeErr) => {
-            if (writeErr) {
-                console.error("Error writing file:", writeErr);
-                return res.status(500).json({ 
-                    success: false, 
-                    message: "Error saving data" 
-                });
-            }
-
-            console.log("Data saved successfully to userData.json");
-            res.status(200).json({ 
-                success: true, 
-                message: "Sign up successful!" 
-            });
+        console.log("User saved successfully to MongoDB");
+        res.status(200).json({ 
+            success: true, 
+            message: "Sign up successful!" 
         });
-    });
+    } catch (error) {
+        console.error("Error saving user:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Error saving data" 
+        });
+    }
 });
 
 // POST route to handle login
-app.post('/login', (req, res) => {
-    const { email, password } = req.body;
-    console.log("Login attempt:", email);
-
-    // Read existing data from Login.JSON
-    fs.readFile(loginDataPath, 'utf8', (err, data) => {
-        if (err) {
-            console.error("Error reading file:", err);
-            return res.status(500).json({ 
-                success: false, 
-                message: "Error reading user data" 
-            });
-        }
-
-        let users = [];
-        
-        try {
-            const parsedData = JSON.parse(data);
-            // Handle both array format and {users: []} format
-            users = Array.isArray(parsedData) ? parsedData : (parsedData.users || []);
-        } catch (parseErr) {
-            console.error("Error parsing JSON:", parseErr);
-            return res.status(500).json({ 
-                success: false, 
-                message: "Error processing user data" 
-            });
-        }
+app.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        console.log("Login attempt:", email);
 
         // Find user with matching email and password
-        const user = users.find(u => u.email === email && u.password === password);
+        const user = await Login.findOne({ email, password });
 
         if (user) {
             console.log("Login successful for:", email);
@@ -130,7 +86,8 @@ app.post('/login', (req, res) => {
                 message: "Login successful!",
                 user: {
                     email: user.email,
-                    name: user.name || user.email
+                    name: user.name || user.email,
+                    role: user.role
                 }
             });
         } else {
@@ -140,134 +97,108 @@ app.post('/login', (req, res) => {
                 message: "Invalid email or password" 
             });
         }
-    });
+    } catch (error) {
+        console.error("Error during login:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error during login" 
+        });
+    }
 });
 
 // GET route to retrieve all users
-app.get('/users', (req, res) => {
-    fs.readFile(userDataPath, 'utf8', (err, data) => {
-        if (err) {
-            return res.status(200).json([]);
-        }
-
-        try {
-            const users = JSON.parse(data);
-            res.status(200).json(users);
-        } catch (parseErr) {
-            res.status(200).json([]);
-        }
-    });
+app.get('/users', async (req, res) => {
+    try {
+        const users = await User.find().sort({ timestamp: -1 });
+        res.status(200).json(users);
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error fetching users" 
+        });
+    }
 });
 
-// ===== PRODUCT ROUTES (using products.json) =====
+// ===== PRODUCT ROUTES (These were in your original but not being used) =====
+// If you need these, you'll need to create a Product model
+// Leaving them commented out for now
 
+/*
 // GET all products
-app.get('/products', (req, res) => {
-    fs.readFile(productsDataPath, 'utf8', (err, data) => {
-        if (err) {
-            return res.status(200).json([]);
-        }
-        
-        try {
-            const products = JSON.parse(data);
-            res.status(200).json(products);
-        } catch (parseErr) {
-            res.status(200).json([]);
-        }
-    });
+app.get('/products', async (req, res) => {
+    try {
+        const products = await Product.find();
+        res.status(200).json(products);
+    } catch (error) {
+        console.error("Error fetching products:", error);
+        res.status(500).json([]);
+    }
 });
 
 // POST add new product
-app.post('/products', (req, res) => {
-    const productData = req.body;
-    console.log("Product data received:", productData);
-    
-    fs.readFile(productsDataPath, 'utf8', (err, data) => {
-        let products = [];
+app.post('/products', async (req, res) => {
+    try {
+        const productData = req.body;
+        console.log("Product data received:", productData);
         
-        if (!err && data) {
-            try {
-                products = JSON.parse(data);
-            } catch (parseErr) {
-                console.error("Error parsing products JSON:", parseErr);
-                products = [];
-            }
-        }
+        const newProduct = new Product(productData);
+        await newProduct.save();
         
-        products.push(productData);
-        
-        fs.writeFile(productsDataPath, JSON.stringify(products, null, 2), 'utf8', (writeErr) => {
-            if (writeErr) {
-                console.error("Error writing products file:", writeErr);
-                return res.status(500).json({ 
-                    success: false, 
-                    message: "Error saving product" 
-                });
-            }
-            
-            console.log("Product saved successfully to products.json");
-            res.status(200).json({ 
-                success: true, 
-                message: "Product added successfully!" 
-            });
+        console.log("Product saved successfully to MongoDB");
+        res.status(200).json({ 
+            success: true, 
+            message: "Product added successfully!" 
         });
-    });
+    } catch (error) {
+        console.error("Error saving product:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Error saving product" 
+        });
+    }
 });
+*/
 
-// ===== ORDER ROUTES (using orders.json) =====
+// ===== ORDER ROUTES (These were in your original but not being used) =====
+// If you need these, you'll need to create an Order model
+// Leaving them commented out for now
 
+/*
 // GET all orders
-app.get('/orders', (req, res) => {
-    fs.readFile(ordersDataPath, 'utf8', (err, data) => {
-        if (err) {
-            return res.status(200).json([]);
-        }
-        
-        try {
-            const orders = JSON.parse(data);
-            res.status(200).json(orders);
-        } catch (parseErr) {
-            res.status(200).json([]);
-        }
-    });
+app.get('/orders', async (req, res) => {
+    try {
+        const orders = await Order.find();
+        res.status(200).json(orders);
+    } catch (error) {
+        console.error("Error fetching orders:", error);
+        res.status(500).json([]);
+    }
 });
 
 // POST create new order
-app.post('/orders', (req, res) => {
-    const orderData = req.body;
-    console.log("Order data received:", orderData);
-    
-    fs.readFile(ordersDataPath, 'utf8', (err, data) => {
-        let orders = [];
+app.post('/orders', async (req, res) => {
+    try {
+        const orderData = req.body;
+        console.log("Order data received:", orderData);
         
-        if (!err && data) {
-            try {
-                orders = JSON.parse(data);
-            } catch (parseErr) {
-                console.error("Error parsing orders JSON:", parseErr);
-                orders = [];
-            }
-        }
+        const newOrder = new Order(orderData);
+        await newOrder.save();
         
-        orders.push(orderData);
-        
-        fs.writeFile(ordersDataPath, JSON.stringify(orders, null, 2), 'utf8', (writeErr) => {
-            if (writeErr) {
-                console.error("Error writing orders file:", writeErr);
-                return res.status(500).json({ 
-                    success: false, 
-                    message: "Error saving order" 
-                });
-            }
-            
-            console.log("Order saved successfully to orders.json");
-            res.status(200).json({ 
-                success: true, 
-                message: "Order placed successfully!" 
-            });
+        console.log("Order saved successfully to MongoDB");
+        res.status(200).json({ 
+            success: true, 
+            message: "Order placed successfully!" 
         });
-    });
+    } catch (error) {
+        console.error("Error saving order:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Error saving order" 
+        });
+    }
 });
+*/
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -278,10 +209,9 @@ app.use((err, req, res, next) => {
     });
 });
 
-// 404 handler for API routes (removed - not needed)
-
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
     console.log('Articles system initialized');
-    console.log('Submissions system initialized'); // NEW
+    console.log('Submissions system initialized');
+    console.log('MongoDB integration active');
 });
