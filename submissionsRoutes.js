@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const Submission = require('./models/Submission');
+const Article = require('./models/Article');
 
-const submissionsDataPath = path.join(__dirname, 'submissions.json');
-const articlesDataPath = path.join(__dirname, 'articles.json');
 const articleHtmlPath = path.join(__dirname, 'Article.html');
 const indexHtmlPath = path.join(__dirname, 'index.html');
 
@@ -167,209 +167,143 @@ function updateIndexHtml(articles) {
 }
 
 // GET all submissions
-router.get('/', (req, res) => {
-    fs.readFile(submissionsDataPath, 'utf8', (err, data) => {
-        if (err) {
-            return res.status(200).json([]);
-        }
-        
-        try {
-            const submissions = JSON.parse(data);
-            res.status(200).json(submissions);
-        } catch (parseErr) {
-            res.status(200).json([]);
-        }
-    });
+router.get('/', async (req, res) => {
+    try {
+        const submissions = await Submission.find({ status: 'pending' }).sort({ id: 1 });
+        const plainSubmissions = submissions.map(s => s.toObject());
+        res.status(200).json(plainSubmissions);
+    } catch (error) {
+        console.error("Error fetching submissions:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error fetching submissions" 
+        });
+    }
 });
 
 // POST new submission (from author)
-router.post('/', (req, res) => {
-    const submissionData = req.body;
-    console.log("Submission received:", submissionData);
-    
-    fs.readFile(submissionsDataPath, 'utf8', (err, data) => {
-        let submissions = [];
+router.post('/', async (req, res) => {
+    try {
+        const submissionData = req.body;
+        console.log("Submission received:", submissionData);
         
-        if (!err && data) {
-            try {
-                submissions = JSON.parse(data);
-            } catch (parseErr) {
-                console.error("Error parsing submissions JSON:", parseErr);
-                submissions = [];
-            }
-        }
+        const newSubmission = new Submission(submissionData);
+        await newSubmission.save();
         
-        submissions.push(submissionData);
-        
-        fs.writeFile(submissionsDataPath, JSON.stringify(submissions, null, 2), 'utf8', (writeErr) => {
-            if (writeErr) {
-                console.error("Error writing submissions file:", writeErr);
-                return res.status(500).json({ 
-                    success: false, 
-                    message: "Error saving submission" 
-                });
-            }
-            
-            console.log("Submission saved successfully");
-            res.status(200).json({ 
-                success: true, 
-                message: "Article submitted for review!" 
-            });
+        console.log("Submission saved successfully to MongoDB");
+        res.status(200).json({ 
+            success: true, 
+            message: "Article submitted for review!" 
         });
-    });
+    } catch (error) {
+        console.error("Error saving submission:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Error saving submission" 
+        });
+    }
 });
 
 // POST approve submission (move to published articles)
-router.post('/:id/approve', (req, res) => {
-    const submissionId = parseInt(req.params.id);
-    console.log("Approve request for submission ID:", submissionId);
-    
-    // Read submissions
-    fs.readFile(submissionsDataPath, 'utf8', (err, submissionsData) => {
-        if (err) {
-            return res.status(500).json({ 
+router.post('/:id/approve', async (req, res) => {
+    try {
+        const submissionId = parseInt(req.params.id);
+        console.log("Approve request for submission ID:", submissionId);
+        
+        // Find submission
+        const submission = await Submission.findOne({ id: submissionId });
+        
+        if (!submission) {
+            return res.status(404).json({ 
                 success: false, 
-                message: "Error reading submissions" 
+                message: "Submission not found" 
             });
         }
         
-        try {
-            let submissions = JSON.parse(submissionsData);
-            const submission = submissions.find(s => s.id === submissionId);
-            
-            if (!submission) {
-                return res.status(404).json({ 
+        // Create article from submission
+        const articleData = {
+            id: submission.id,
+            title: submission.title,
+            category: submission.category,
+            author: submission.author,
+            date: submission.date,
+            readTime: submission.readTime,
+            excerpt: submission.excerpt,
+            content: submission.content
+        };
+        
+        const newArticle = new Article(articleData);
+        await newArticle.save();
+        
+        // Update submission status
+        submission.status = 'approved';
+        await submission.save();
+        
+        // Generate HTML file
+        const htmlContent = generateArticleHTML(articleData);
+        const htmlFileName = `article-${submission.id}.html`;
+        const htmlFilePath = path.join(__dirname, htmlFileName);
+        
+        fs.writeFile(htmlFilePath, htmlContent, 'utf8', async (htmlWriteErr) => {
+            if (htmlWriteErr) {
+                console.error("Error writing HTML file:", htmlWriteErr);
+                return res.status(500).json({ 
                     success: false, 
-                    message: "Submission not found" 
+                    message: "Error creating article HTML file" 
                 });
             }
             
-            // Remove from submissions
-            submissions = submissions.filter(s => s.id !== submissionId);
+            console.log("Article approved and published");
             
-            // Read articles
-            fs.readFile(articlesDataPath, 'utf8', (err, articlesData) => {
-                let articles = [];
-                
-                if (!err && articlesData) {
-                    try {
-                        articles = JSON.parse(articlesData);
-                    } catch (parseErr) {
-                        console.error("Error parsing articles JSON:", parseErr);
-                    }
-                }
-                
-                // Add to articles
-                articles.push(submission);
-                
-                // Generate HTML file for the article
-                const htmlContent = generateArticleHTML(submission);
-                const htmlFileName = `article-${submission.id}.html`;
-                const htmlFilePath = path.join(__dirname, htmlFileName);
-                
-                // Write the HTML file
-                fs.writeFile(htmlFilePath, htmlContent, 'utf8', (htmlWriteErr) => {
-                    if (htmlWriteErr) {
-                        console.error("Error writing HTML file:", htmlWriteErr);
-                        return res.status(500).json({ 
-                            success: false, 
-                            message: "Error creating article HTML file" 
-                        });
-                    }
-                    
-                    // Save updated submissions
-                    fs.writeFile(submissionsDataPath, JSON.stringify(submissions, null, 2), 'utf8', (writeErr) => {
-                        if (writeErr) {
-                            console.error("Error updating submissions:", writeErr);
-                            return res.status(500).json({ 
-                                success: false, 
-                                message: "Error updating submissions" 
-                            });
-                        }
-                        
-                        // Save updated articles
-                        fs.writeFile(articlesDataPath, JSON.stringify(articles, null, 2), 'utf8', (writeErr2) => {
-                            if (writeErr2) {
-                                console.error("Error saving article:", writeErr2);
-                                return res.status(500).json({ 
-                                    success: false, 
-                                    message: "Error publishing article" 
-                                });
-                            }
-                            
-                            console.log("Article approved and published");
-                            
-                            // Update Article.html and index.html
-                            updateArticleHtml(articles);
-                            updateIndexHtml(articles);
-                            
-                            res.status(200).json({ 
-                                success: true, 
-                                message: "Article approved and published!" 
-                            });
-                        });
-                    });
-                });
+            // Get all articles for updating HTML pages
+            const allArticles = await Article.find().sort({ id: 1 });
+            const plainArticles = allArticles.map(a => a.toObject());
+            
+            // Update Article.html and index.html
+            updateArticleHtml(plainArticles);
+            updateIndexHtml(plainArticles);
+            
+            res.status(200).json({ 
+                success: true, 
+                message: "Article approved and published!" 
             });
-        } catch (parseErr) {
-            console.error("Error parsing submissions JSON:", parseErr);
-            res.status(500).json({ 
-                success: false, 
-                message: "Error processing submissions" 
-            });
-        }
-    });
+        });
+    } catch (error) {
+        console.error("Error approving submission:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || "Error approving submission" 
+        });
+    }
 });
 
 // DELETE submission (reject)
-router.delete('/:id', (req, res) => {
-    const submissionId = parseInt(req.params.id);
-    console.log("Delete request for submission ID:", submissionId);
-    
-    fs.readFile(submissionsDataPath, 'utf8', (err, data) => {
-        if (err) {
-            return res.status(500).json({ 
+router.delete('/:id', async (req, res) => {
+    try {
+        const submissionId = parseInt(req.params.id);
+        console.log("Delete request for submission ID:", submissionId);
+        
+        const deletedSubmission = await Submission.findOneAndDelete({ id: submissionId });
+        
+        if (!deletedSubmission) {
+            return res.status(404).json({ 
                 success: false, 
-                message: "Error reading submissions" 
+                message: "Submission not found" 
             });
         }
         
-        try {
-            let submissions = JSON.parse(data);
-            const initialLength = submissions.length;
-            
-            submissions = submissions.filter(s => s.id !== submissionId);
-            
-            if (submissions.length === initialLength) {
-                return res.status(404).json({ 
-                    success: false, 
-                    message: "Submission not found" 
-                });
-            }
-            
-            fs.writeFile(submissionsDataPath, JSON.stringify(submissions, null, 2), 'utf8', (writeErr) => {
-                if (writeErr) {
-                    console.error("Error writing submissions file:", writeErr);
-                    return res.status(500).json({ 
-                        success: false, 
-                        message: "Error deleting submission" 
-                    });
-                }
-                
-                console.log("Submission rejected and deleted");
-                res.status(200).json({ 
-                    success: true, 
-                    message: "Submission rejected successfully" 
-                });
-            });
-        } catch (parseErr) {
-            console.error("Error parsing submissions JSON:", parseErr);
-            res.status(500).json({ 
-                success: false, 
-                message: "Error processing submissions" 
-            });
-        }
-    });
+        console.log("Submission rejected and deleted");
+        res.status(200).json({ 
+            success: true, 
+            message: "Submission rejected successfully" 
+        });
+    } catch (error) {
+        console.error("Error deleting submission:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Error deleting submission" 
+        });
+    }
 });
 
 module.exports = router;
