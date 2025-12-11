@@ -73,29 +73,53 @@ app.post('/signup', async (req, res) => {
 // POST route to handle login
 app.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        console.log("Login attempt:", email);
+        const { email, password, loginType } = req.body;
+        console.log("Login attempt:", email, "Type:", loginType);
 
-        // Find user with matching email and password
-        const user = await Login.findOne({ email, password });
+        if (loginType === 'author') {
+            // Author/Admin login - check Login collection
+            const user = await Login.findOne({ email, password });
 
-        if (user) {
-            console.log("Login successful for:", email);
-            res.status(200).json({ 
-                success: true, 
-                message: "Login successful!",
-                user: {
-                    email: user.email,
-                    name: user.name || user.email,
-                    role: user.role
-                }
-            });
+            if (user) {
+                console.log("Author login successful for:", email);
+                res.status(200).json({ 
+                    success: true, 
+                    message: "Login successful!",
+                    user: {
+                        email: user.email,
+                        name: user.name || user.email,
+                        role: user.role
+                    }
+                });
+            } else {
+                console.log("Author login failed for:", email);
+                res.status(401).json({ 
+                    success: false, 
+                    message: "Invalid email or password" 
+                });
+            }
         } else {
-            console.log("Login failed for:", email);
-            res.status(401).json({ 
-                success: false, 
-                message: "Invalid email or password" 
-            });
+            // Regular user login - check User collection (subscribers)
+            const user = await User.findOne({ email });
+
+            if (user) {
+                console.log("User login successful for:", email);
+                res.status(200).json({ 
+                    success: true, 
+                    message: "Welcome back!",
+                    user: {
+                        email: user.email,
+                        name: user.userName,
+                        role: 'user'
+                    }
+                });
+            } else {
+                console.log("User login failed for:", email);
+                res.status(401).json({ 
+                    success: false, 
+                    message: "Email not found. Please subscribe first." 
+                });
+            }
         }
     } catch (error) {
         console.error("Error during login:", error);
@@ -119,86 +143,6 @@ app.get('/users', async (req, res) => {
         });
     }
 });
-
-// ===== PRODUCT ROUTES (These were in your original but not being used) =====
-// If you need these, you'll need to create a Product model
-// Leaving them commented out for now
-
-/*
-// GET all products
-app.get('/products', async (req, res) => {
-    try {
-        const products = await Product.find();
-        res.status(200).json(products);
-    } catch (error) {
-        console.error("Error fetching products:", error);
-        res.status(500).json([]);
-    }
-});
-
-// POST add new product
-app.post('/products', async (req, res) => {
-    try {
-        const productData = req.body;
-        console.log("Product data received:", productData);
-        
-        const newProduct = new Product(productData);
-        await newProduct.save();
-        
-        console.log("Product saved successfully to MongoDB");
-        res.status(200).json({ 
-            success: true, 
-            message: "Product added successfully!" 
-        });
-    } catch (error) {
-        console.error("Error saving product:", error);
-        res.status(500).json({ 
-            success: false, 
-            message: error.message || "Error saving product" 
-        });
-    }
-});
-*/
-
-// ===== ORDER ROUTES (These were in your original but not being used) =====
-// If you need these, you'll need to create an Order model
-// Leaving them commented out for now
-
-/*
-// GET all orders
-app.get('/orders', async (req, res) => {
-    try {
-        const orders = await Order.find();
-        res.status(200).json(orders);
-    } catch (error) {
-        console.error("Error fetching orders:", error);
-        res.status(500).json([]);
-    }
-});
-
-// POST create new order
-app.post('/orders', async (req, res) => {
-    try {
-        const orderData = req.body;
-        console.log("Order data received:", orderData);
-        
-        const newOrder = new Order(orderData);
-        await newOrder.save();
-        
-        console.log("Order saved successfully to MongoDB");
-        res.status(200).json({ 
-            success: true, 
-            message: "Order placed successfully!" 
-        });
-    } catch (error) {
-        console.error("Error saving order:", error);
-        res.status(500).json({ 
-            success: false, 
-            message: error.message || "Error saving order" 
-        });
-    }
-});
-*/
 
 // Error handling middleware
 app.use((err, req, res, next) => {

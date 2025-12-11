@@ -1,35 +1,34 @@
 const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
-const connectDB = require('../config/database');
-const User = require('../models/User');
-const Article = require('../models/Article');
-const Login = require('../models/Login');
+const connectDB = require('./config/database');
+const User = require('./models/User');
+const Article = require('./models/Article');
 
 async function migrateData() {
     await connectDB();
     
-    // Migrate users
-    const usersData = JSON.parse(fs.readFileSync('./userData.JSON', 'utf8'));
-    await User.insertMany(usersData);
-    console.log('Users migrated');
+    // Wait for connection
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Migrate login credentials
-    const loginData = JSON.parse(fs.readFileSync('./Login.JSON', 'utf8'));
-    // Add role field based on email
-    const loginsWithRoles = loginData.map(login => ({
-        ...login,
-        role: login.email === 'admin@example.com' ? 'admin' : 'author'
-    }));
-    await Login.insertMany(loginsWithRoles);
-    console.log('Login credentials migrated');
+    try {
+        // Migrate users
+        const usersData = JSON.parse(fs.readFileSync('./userData.JSON', 'utf8'));
+        await User.deleteMany({}); // Clear existing
+        await User.insertMany(usersData);
+        console.log('✓ Users migrated');
+        
+        // Migrate articles
+        const articlesData = JSON.parse(fs.readFileSync('./articles.json', 'utf8'));
+        await Article.deleteMany({}); // Clear existing
+        await Article.insertMany(articlesData);
+        console.log('✓ Articles migrated');
+        
+        console.log('\n Migration complete!');
+    } catch (error) {
+        console.error(' Migration error:', error.message);
+    }
     
-    // Migrate articles
-    const articlesData = JSON.parse(fs.readFileSync('./articles.json', 'utf8'));
-    await Article.insertMany(articlesData);
-    console.log('Articles migrated');
-    
-    console.log('Migration complete!');
     process.exit(0);
 }
 

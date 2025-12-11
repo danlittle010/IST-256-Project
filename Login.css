@@ -15,3 +15,31 @@ h2 {
     text-align: center;
     margin-bottom: 15px;
 }
+
+#userLoginTab, #authorLoginTab {
+    flex: 1;
+    background-color: #e9ecef;
+    color: #495057;
+    border: 1px solid #dee2e6;
+}
+
+#userLoginTab.active, #authorLoginTab.active {
+    background-color: #19561f;
+    color: white;
+    border-color: #19561f;
+}
+
+#userLoginTab:hover, #authorLoginTab:hover {
+    background-color: #19561f;
+    color: white;
+}
+
+.btn-primary {
+    background-color: #19561f;
+    border-color: #19561f;
+}
+
+.btn-primary:hover {
+    background-color: #134517;
+    border-color: #134517;
+}

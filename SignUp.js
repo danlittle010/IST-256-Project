@@ -1,14 +1,40 @@
 let form = document.getElementById("signupForm");
 
+// Add plan selection functionality
+function selectPlan(plan) {
+    const freeCard = document.getElementById('freeCard');
+    const premiumCard = document.getElementById('premiumCard');
+    const freeRadio = document.getElementById('planFree');
+    const premiumRadio = document.getElementById('planPremium');
+    
+    if (plan === 'free') {
+        freeCard.classList.add('selected');
+        premiumCard.classList.remove('selected');
+        freeRadio.checked = true;
+    } else {
+        premiumCard.classList.add('selected');
+        freeCard.classList.remove('selected');
+        premiumRadio.checked = true;
+    }
+}
+
+// Initialize with free plan selected
+document.addEventListener('DOMContentLoaded', () => {
+    selectPlan('free');
+});
+
 function handleSubmit(event) {
     event.preventDefault();
 
-    // Get form values using getElementById to match your HTML
+    // Get form values
     let userName = document.getElementById("name").value;
     let ageNumber = document.getElementById("age").value;
     let emailAddress = document.getElementById("email").value;
     let address = document.getElementById("address").value;
     let phoneNumber = document.getElementById("phone").value;
+    
+    // Get selected subscription plan
+    let subscription = document.querySelector('input[name="subscription"]:checked').value;
 
     // Validate username (at least 3 characters)
     if (userName.length < 3) {
@@ -55,6 +81,7 @@ function handleSubmit(event) {
         email: emailAddress,
         address: address,
         phoneNumber: phoneNumber,
+        subscription: subscription,
         timestamp: new Date().toISOString()
     };
 
@@ -69,8 +96,12 @@ function handleSubmit(event) {
     .then(response => response.json())
     .then(data => {
         console.log("Success:", data);
-        showMessage("Sign up successful! Thank you for subscribing. Redirecting...", "success");
+        const planText = subscription === 'premium' ? 'Premium' : 'Free';
+        showMessage(`Sign up successful! You are now subscribed to the ${planText} plan. Redirecting...`, "success");
         form.reset();
+        
+        // Reset to free plan
+        selectPlan('free');
         
         // Redirect to home page after 2 seconds
         setTimeout(() => {
@@ -91,7 +122,7 @@ function showMessage(message, type) {
     // Clear message after 3 seconds
     setTimeout(() => {
         output.innerHTML = '';
-    }, 3000);
+    }, 2000);
 }
 
 form.addEventListener("submit", handleSubmit);

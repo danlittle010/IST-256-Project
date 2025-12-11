@@ -34,12 +34,49 @@
                 <label for="phone" class="form-label">Phone (optional)</label>
                 <input type="tel" class="form-control" id="phone" placeholder="123-456-7890">
             </div>
-            <input type="submit" id="submitBtn">
+            
+            <!-- Subscription Plan Section -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Subscription Plan *</label>
+                <div class="subscription-options">
+                    <div class="subscription-card" id="freeCard" onclick="selectPlan('free')">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="subscription" value="free" id="planFree" checked>
+                            <label class="form-check-label" for="planFree">
+                                <strong>Free Plan</strong>
+                            </label>
+                        </div>
+                        <ul class="plan-features">
+                            <li>Access to all articles</li>
+                            <li>Weekly newsletter</li>
+                            <li>Community access</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="subscription-card" id="premiumCard" onclick="selectPlan('premium')">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="subscription" value="premium" id="planPremium">
+                            <label class="form-check-label" for="planPremium">
+                                <strong>Premium Plan</strong>
+                            </label>
+                        </div>
+                        <ul class="plan-features">
+                            <li>Everything in Free</li>
+                            <li>Ad-free experience</li>
+                            <li>Early access to articles</li>
+                            <li>Exclusive content</li>
+                            <li>Priority support</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <input type="submit" id="submitBtn" class="btn btn-primary w-100" value="Sign Up">
         </form>
         <div id="output" class="mt-3"></div>
     </div>
 
-    <script src="SignUp.JS"></script>
+    <script src="SignUp.js"></script>
 </body>
 
 </html>
